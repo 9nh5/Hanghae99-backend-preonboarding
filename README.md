@@ -22,15 +22,49 @@
 **Spring Security 기본 이해**
 
 - [ ]  Filter란 무엇인가?(with Interceptor, AOP)
+      Spring에서 사용되는 Filter, Interceptor, AOP는 무승 행동을 하기 전에 먼저 실행하거나, 실행한 후에 추가적인 행동을 할 때 사용되는 기능들이다.
+      Interceptor와 Filter는 Servlet 단위에서 실행된다. AOP는 메소드 앞에 Proxy 패텅의 형태로 실행된다.
+      요청이 들어왔을 때 Filter를 거쳐 Interceptor가 요청을 가로채고, AOP를 거친 후 다시 Interceptor, Filter 순으로 실행된다.
+      이 중 Filter란 보통 생각하는 필터처럼 거름망 같은 존재이다. 요청과 응답을 거른 후 정제하는 역할을 한다.
+      Servlet Filter는 DispatcherServlet 이전에 실행 되는데 Filter가 동작하도록 지정된 자원의 앞단에서 요청내용을 변경하거나, 헤더를 검사해 인증 토큰의 유무나 문제를 파악할 수 있다.
+      Spring과 분리되어야 하는 기능을 처리하거나, 인코딩 변환 처리, XSS방어, 요청에 대한 인증, 권한 체크 등을 하는 데에 쓰인다.
+
 - [ ]  Spring Security란?
+      Spring Framework 중 하나로 Spring 생태계에서 보안에 필요한 기능들을 제공하며, 개발 구조가 Spring Framework 안에서 활용하기 적합한 구조로 설계되어 있다.
+      Spring Security는 인증, 권한 관리, 데이터 보호기능 등을 포함하여 사용자 관리 기능을 구현하는데 도움을 주는 Spring Framework이다.
+      프레임워크를 사용하지 않고, 코드를 직접 작성할 경우 Spring에서 추구하는 IoC/DI 패턴과 같은 확장 패턴을 염두해서 인증/인가 부분을 직접 개발하기 쉽지 않지만 Spring Security에서는
+      이와 같은 기능들을 제공해주기 때문에 개발 효율을 높일 수 있다.
+      때문에 Spring을 사용하는 경우에는 Spring Security를 활용하여 보안 기능을 추가하며, 이 외의 추가 기능이 필요할 경우 Spring Security를 바탕으로 기능을 추가하는 방식을 채택할 수 있다.
 
 **JWT 기본 이해**
 
 - [ ]  JWT란 무엇인가요?
+      JWT는 Json Web token의 약자로 클라이언트와 서버 사이에서 통신할 때 권한 체크를 위해 사용하는 토큰이다.
+      header, payload, signature로 나눠져 있다.
+      header는 어떠한 알고리즘으로 암호화 할 지, 어떤 토큰을 사용할 것인지에 대한 정보를 담고있다.
+      payload에는 사용자의 정보가 담겨있다. payload에 있는 내용은 수정이 가능하여 더 많은 정보를 추가할 수 있다.
+      하지만, payload 자체는 인코딩 된 것이기 때문에 payload에는 중요한 개인정보가 아닌, 해당 토큰에 대한 권한의 범위나 만료일자 같은 최소 정보만을 담아야한다.
+      signature는 헤더와 정보를 합친 후 발급해준 서버가 지정한 secret key로 암호화시켜 토큰 변조를 어렵게 만든다.
+      JWT는 별도의 인증 저장소가 필요하지 않기 때문에 인증서버와 db에 의존할 필요가 없다. 또한 서버 측 부하를 낮출 수 있고, 독립적이기 때문에 능률적으로 접근 권한 관리를 할 수 있다.
+      하지만, 서버로부터 받은 토큰이 쿠키, 로컬, 세션 스토리지에 저장이 되는데, 탈취 당할 위험이 있기 때문에 중요 정보를 담지 말아야 한다.
+      토큰에 넣는 데이터가 많아질수록 토큰이 길어져 API를 호출할 때마다 토큰 데이터를 서버에 전달해야 하기 때문에 그만큼 네트워크 대역폭 낭비가 심할 수 있다.
+      또한 한 번 발급된 token은 수정 및 폐기가 불가능하다는 단점이 있다.
 
 **토큰 발행과 유효성 확인**
 
 - [ ]  Access / Refresh Token 발행과 검증에 관한 **테스트 시나리오** 작성하기
+      토큰 기반 인증 방식은 세션 기반 인증 방식과는 다르게 stateless하다. 서버가 상태를 보관하고 있지 않으며, 한 번 발급된 토큰에 대해서 서버는 제어권을 갖고 있지 않다.
+      때문에 Access Token이 탈취되었을 때, 계정의 제어권이 탈취자에게 넘어가게 되고, Access Token이 만료되기만을 기다리는 것 말고는 방법이 딱히 없다.
+      이러한 단점을 보완하기 위해 Access Token의 유효기간을 아주 짧게 설정하여 해당 토큰이 탈취당하더라도 금방 만료되어 사용하지 못하게 할 수 있다. 하지만 이렇게 한다면 Access Token이 만료될 때마다 매번 30분에서 1시간마다 로그인을 해야하는 번거로운 일이 생길 것이다. 서버에서는 이러한 번거로움을 줄이기 위해 Access Token이 발행될 때, Refresh Token을 함께 클라이언트에게 발행한다.
+      이 때 Refresh Token은 안전한 저장소(일반적으로 회원 DB)에 저장된다.
+      이후 클라이언트에서 API를 호출하면 헤더에 담긴 Access Token이 유효한지 검증한다.
+      Access Token이 유효한 경우 API 응답을 반환한다.
+      만약 Access Token이 만료되었다면 서버는 만료됨을 확인하고 권한없음은 반환한다.
+      클라이언트는 Refresh Token과 Access Token을 함께 서버로 보낸다.
+      서버는 Access Token의 조작 여부를 검증하고, Refresh Token과 DB에 저장되어 있던 Refresh Token을 비교한다.
+      Refreh Token이 유효하다면 새 Access Token을 응답 헤더에 담아서 정상 응답을 반환하고, 다시 Access Token을 헤더에 실어 API 요청을 진행하게된다.
+      Refresh Token이 유효하지 않은 경우, 예외 상황을 발생시켜 오류 응답을 반환한다.
+      +RTR의 경우에는 1회성인 Refresh Token을 발행하므로 새로운 Access Token을 발행할 때, 새 Refresh Token을 함께 발행한다.
 
 **유닛 테스트 작성**
 
